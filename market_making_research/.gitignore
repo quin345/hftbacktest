@@ -1,0 +1,5 @@
+data/
+verify_run/
+.venv/
+__pycache__/
+*.pyc
