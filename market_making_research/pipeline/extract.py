@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-from config import CHUNK_MINUTES, RAW, SYMBOLS, WINDOW_END, WINDOW_START
+from config import CHUNK_MINUTES, RAW, RESULTS, SYMBOLS, WINDOW_END, WINDOW_START
 from qdb import select
 
 FMT = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -57,10 +57,23 @@ def expand_levels(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(out, index=df.index)
 
 
+def window_counts() -> dict:
+    """count() per (table, symbol) over the whole window [WINDOW_START, WINDOW_END)."""
+    out = {}
+    for table in ("spot_trade", "spot_depth10"):
+        for sym in SYMBOLS:
+            _, c = select(f"SELECT count() FROM {table} WHERE symbol = '{sym}' "
+                          f"AND timestamp >= '{WINDOW_START}' AND timestamp < '{WINDOW_END}'")
+            out[(table, sym)] = int(c[0][0])
+    return out
+
+
 def main() -> None:
     (RAW / "trade").mkdir(parents=True, exist_ok=True)
     (RAW / "depth").mkdir(parents=True, exist_ok=True)
     manifest = []
+    before = window_counts()
+    got = {}
     for sym in SYMBOLS:
         tr, dp = [], []
         for a, b in chunks():
@@ -77,8 +90,22 @@ def main() -> None:
         d["ts_ns"] = _ts_ns(d.pop("timestamp"))
         t.to_parquet(RAW / "trade" / f"{sym}.parquet", index=False)
         d.to_parquet(RAW / "depth" / f"{sym}.parquet", index=False)
+        got[("spot_trade", sym)] = len(t)
+        got[("spot_depth10", sym)] = len(d)
         print(f"{sym}: trades={len(t)} depth={len(d)}", flush=True)
     pd.DataFrame(manifest, columns=["symbol", "chunk_start", "trade_rows", "depth_rows"]).to_csv(RAW / "manifest.csv", index=False)
+    # Row counts before and after the extract must equal the rows extracted; otherwise rows
+    # landed (or vanished) inside the window during the extract and the run is not reproducible.
+    after = window_counts()
+    rows = [dict(table=k[0], symbol=k[1], window_start=WINDOW_START, window_end=WINDOW_END,
+                 count_before=before[k], rows_extracted=got[k], count_after=after[k],
+                 consistent=bool(before[k] == got[k] == after[k])) for k in before]
+    (RESULTS / "audit").mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows).to_csv(RESULTS / "audit" / "extract_counts.csv", index=False)
+    bad = [r for r in rows if not r["consistent"]]
+    if bad:
+        raise RuntimeError(f"row counts changed during extract: {bad}")
+    print("extract counts consistent before/after:", {f"{k[0]}/{k[1]}": v for k, v in after.items()}, flush=True)
 
 
 if __name__ == "__main__":

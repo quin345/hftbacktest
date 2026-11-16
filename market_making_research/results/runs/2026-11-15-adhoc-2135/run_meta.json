@@ -1,0 +1,11 @@
+{
+  "run_id": "2026-11-15-adhoc-2135",
+  "invoked_at_utc": "2026-11-15T21:35:06Z",
+  "window": [
+    "2026-11-15T13:20:00.000000Z",
+    "2026-11-15T21:35:00.000000Z"
+  ],
+  "comparable_to_cumulative": "yes",
+  "notes": "cumulative window from 2026-11-15 13:20 UTC to the run time (floored to the minute)",
+  "correction": "run_id field corrected by hand after the run (it held the staging folder name, a bug fixed in run_index.py)"
+}

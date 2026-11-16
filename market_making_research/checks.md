@@ -82,3 +82,82 @@ Issues found and how they were handled:
   `verify_run/` (236 MB) is the clean rerun copy and can be deleted by the owner if space
   matters. I did not delete it.
 * No orders, no trading, no external messages, nothing published.
+
+---
+
+# Checks for the factor ladder and the daily cumulative run (2026-11-15, 21:22 to 21:45 UTC)
+
+## 5. Environment
+
+* The project moved to `projects/hftbacktest/market_making_research/`. `.venv/bin/python` still
+  works, because it is a symlink to the uv-managed CPython 3.12, and pandas 3.1.1 and numba import
+  fine. **The venv was not recreated.** Console scripts in `.venv/bin/` (`numba`, `f2py`) still
+  have shebangs pointing to the old path. The pipeline never uses them; it always calls
+  `.venv/bin/python <script>`. If the venv ever breaks, rebuild it with the `uv venv` command
+  in `pipeline/README.md`.
+* The numba cache is recompiled under `pipeline/__pycache__/` (inside the project).
+
+## 6. Verification performed
+
+| Check | Result |
+|---|---|
+| Unit tests | `test_sim.py` 7/7 pass. New `test_factors.py` 10/10 pass. They cover the fixed ladder order and "off"-first grids, "off" allowing everything, directional filters pulling the threatened side (imb1, flow, BTC lead-lag), regime filters pulling both sides (rv, spread), the per-side depth-change filter, NaN being neutral, AND-combination, depth change values and segment resets, the left-open trade-flow window, BTC lead-lag not applying to BTC, and the 4-of-5 (ceil 0.8n) fold rule. Both suites also run as the first stages of every daily run. |
+| New pipeline reproduces the frozen study | `run_daily.sh` with `MMR_WINDOW_END=2026-11-15T20:40:00.000000Z` into `verify_daily/frozen/frozen-rerun/`. All **20 original result files are byte-identical** to `results/` (SHA-256 manifests; the only differences are 9 *added* files: ladder/*, audit/anomalies.csv, coverage.csv, extract_counts.csv, extract_manifest.csv). Extracted rows equal the frozen counts exactly. |
+| Daily entrypoint, default invocation | `pipeline/run_daily.sh` at 21:3x exited **3**, because `results/runs/2026-11-15` (the frozen run) already exists. This is the intended never-overwrite behaviour. Nothing was written. |
+| Daily entrypoint, end to end | `MMR_RUN_ID=2026-11-15-adhoc-2135 pipeline/run_daily.sh`, invoked 2026-11-15T21:35:06Z. **Window used: 2026-11-15T13:20:00.000000Z to 2026-11-15T21:35:00.000000Z** (invocation floored to the minute, 60 s settle wait). Exit 0 in about 5 min. The run wrote `results/runs/2026-11-15-adhoc-2135/` (29 hashed result files + run.log + run_meta.json), appended an index row and deleted its intermediate parquet (`data/runs/…`). |
+| Rerun from an empty folder is identical | `MMR_WINDOW_END=2026-11-15T21:35:00.000000Z MMR_RUN_ID=2026-11-15-adhoc-2135 MMR_RUNS_DIR=$PWD/verify_daily/rerun pipeline/run_daily.sh` → exit 0. `tables/hash_manifest.txt` is **identical** (29 files). Every file in the two run folders is byte-identical except `run.log` and `run_meta.json`, which contain the invocation time and are deliberately not hashed. The index rows are identical except `invoked_at_utc`. |
+| Row counts before and after extract | `audit/extract_counts.csv`: for every (table, symbol), count() before = rows extracted = count() after (`consistent=True`), plus per-15-min-chunk count checks (`extract_manifest.csv`). Re-querying the 13:20 to 21:35 window at about 21:45 returned the same counts. |
+| Read-only / scope | Only SELECT queries through `qdb.py` (guarded) and manual SELECT count/min/max checks via curl to 127.0.0.1:9000. No changes to QuestDB or the collector. No git commands. Files written only inside `market_making_research/`. `projects/hftbacktest/.gitignore`, `research_baseline/` and `research_btcusdt_questdb/` were not touched. The project's own `.gitignore` gained `verify_daily/`, `results/runs/.lock` and `results/runs/.incomplete-*/`. |
+| Citation check | Every ladder and index number in `report.md` was checked against `results/runs/2026-11-15/ladder/*.csv`, `results/runs/2026-11-15-adhoc-2135/ladder/*.csv`, `ladder_folds.csv` and `results/runs/index.csv`. |
+
+## 7. Row counts (rows in window; raw = clean for every series, nothing dropped)
+
+| run_id | Window end | Trades BTC / ETH / SOL | Depth BTC / ETH / SOL |
+|---|---|---|---|
+| 2026-11-15 (frozen) | 20:40:00 | 1,691,750 / 753,949 / 252,109 | 262,711 / 259,099 / 217,670 |
+| 2026-11-15-adhoc-2135 | 21:35:00 | 1,805,134 / 829,789 / 269,222 | 295,494 / 291,026 / 243,513 |
+
+## 8. Anomalies (cumulative run 13:20 to 21:35; `audit/anomalies.csv`, `coverage.csv`)
+
+* Duplicates (trade_id, depth update id), crossed or locked books, non-positive sizes or prices,
+  unsorted levels, top-of-book vs JSON mismatches, off-tick prices, non-monotonic timestamps: **0**
+  for all symbols.
+* Trade-id gaps: BTC 1,053, ETH 121, SOL 178 missing IDs. These are the same 13:20:49 reconnect as
+  before; no new gaps after 20:40.
+* Depth gaps > 1 s: 2 per symbol (13:20:49 reconnect, 6 s; 18:11:28 stall, 1.4 to 1.5 s). None new.
+* Trade silences > 10 s: ETH 2, SOL 7, BTC 0 (max 14.3 s ETH, 13.3 s SOL). Trade IDs are
+  contiguous across them, so they are quiet markets, not data loss.
+* Window edges: trades end 3 to 4 s before 21:35:00 in all three symbols. I checked trade IDs
+  21:34:50 to 21:35:10: they are contiguous (BTC 366 IDs = 366 rows) and the next trades are
+  at 21:35:00.005 to 21:35:02.1. This is a genuine lull, not a missing tail. Depth runs to within
+  0.3 s of the end.
+* BTC outlier snapshot of 3,691 ticks spread (kept, as before).
+
+## 9. Unresolved uncertainty (new)
+
+1. **Ladder decisions rest on one session and 5 to 6 autocorrelated hourly folds.** ETH's rv_10s
+   KEEP is marginal (one qualifying queue_cons fold improved by only +0.002 bps).
+2. **Forward selection is order-dependent**, and earlier thresholds are not refitted. A factor
+   rejected at step k is never retried. A different pre-declared order could give different
+   decisions.
+3. **The selection objective (per-fill markout, ≥20% of earlier notional)** is a choice I made in
+   advance so that "trade less" does not count as improvement. A total-net-$ objective would favour
+   the most restrictive filters, and would make nearly every filter look "better" under the
+   losing queue models.
+4. **The fold rule for cumulative runs** is generalised to ceil(0.8 × folds). The fold count
+   grows by about 24 per day, so later runs judge the ladder on many more folds than the 5-fold
+   rule in the brief.
+5. **Scaling.** Each daily run re-extracts and re-simulates from 13:20 on 11-15, so runtime and
+   memory grow linearly with the days of data. That is about 5 min for 8 h now; extrapolated (not
+   measured), roughly 15 min for 1 day and several hours after a few weeks. The 4 h per-stage
+   timeout will eventually trip. The smallest fix is per-day cached extracts. Not done.
+6. **Settle margin.** The run waits 60 s after the window end and fails if counts change during
+   the extract. If the collector ever writes rows more than 60 s late, a run could miss rows that
+   arrived after the "after" count. That cannot be detected inside the run.
+7. **The run folder is named by the UTC date of the window end.** A second run on the same date
+   needs `MMR_RUN_ID`, otherwise it exits 3. A failed run leaves `results/runs/.incomplete-<id>-<pid>/`
+   and `data/runs/<id>-<pid>/` for inspection; the pipeline does not clean these up.
+8. `data/runs/frozen-rerun-48685/` (243 MB, the frozen-window rerun data kept with
+   `MMR_KEEP_DATA=1`) and `verify_daily/` (verification outputs) were left in place. The owner can
+   delete them; I did not.
+9. Fee levels are still unverified (as in §3.3).

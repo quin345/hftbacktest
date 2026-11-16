@@ -6,6 +6,7 @@ t_ex = recv_ts - book_lag_ms from the audit):
   imb1 (top-of-book queue imbalance), imb5, imb10 (depth imbalance over 5/10 levels),
   flow_1s / flow_5s (aggressor volume imbalance of trades in the trailing window, in [-1, 1]),
   ntr_1s (trade count trailing 1 s), rv_10s / rv_60s (realised vol of mid log-returns, bps),
+  dchg_b_1s / dchg_a_1s (relative change of top-5 bid/ask quantity vs 1 s earlier, same segment),
   btc_ret_1s / btc_ret_5s (BTC mid return over trailing window, bps; cross-asset feature),
   fwd_1s / fwd_5s / fwd_30s (forward mid change, bps; LABELS ONLY, never used as inputs).
 Trade-level features (one row per public trade):
@@ -23,6 +24,7 @@ import numpy as np
 import pandas as pd
 
 from config import CLEAN, FEAT, RESULTS, SYMBOLS, TICK
+from factors import depth_change
 
 HORIZONS = {"1s": 1.0, "5s": 5.0, "30s": 30.0}
 
@@ -65,6 +67,10 @@ def build_symbol(sym: str, btc_mid: tuple[np.ndarray, np.ndarray] | None):
     for n in (1, 5, 10):
         b, a = bq[:, :n].sum(1), aq[:, :n].sum(1)
         f[f"imb{n}"] = (b - a) / (b + a)
+    # depth change (factor ladder): top-5 displayed quantity per side vs 1 s earlier
+    seg = d["seg"].to_numpy()
+    f["dchg_b_1s"] = depth_change(tb, bq[:, :5].sum(1), seg, 1_000_000_000)
+    f["dchg_a_1s"] = depth_change(tb, aq[:, :5].sum(1), seg, 1_000_000_000)
     tt = t["ts_ns"].to_numpy()
     side = np.where(t["buyer_is_maker"].to_numpy(), -1.0, 1.0)
     qty = t["qty"].to_numpy()

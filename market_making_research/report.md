@@ -17,6 +17,12 @@ That model is known to overstate profit. Even there, the positive results disapp
 fee of 1 bp. Two of the three hypotheses have real predictive content, but this data and
 simulator do not show that the content becomes market-making profit.
 
+*Update (2026-11-15, later the same evening):* a factor ladder was added on top of H1 (see
+"Factor ladder" below). Only the volatility pause (`rv_10s`) passes the keep rule, and only on
+BTC and ETH. The conclusion above stays the same: nothing is profitable after fees under the queue
+fill models. The pipeline now also runs daily on a cumulative window (see "Dated runs and run
+index").
+
 Ranking, with one-line verdicts:
 
 1. **H1, queue-imbalance quote filter.** The signal is strong and stable OOS: Spearman 0.27 to
@@ -227,3 +233,101 @@ Every queue-model configuration is negative at every fee, including the -0.5 bp 
 2. Rerun H1 and H3 on more days. With five hourly folds, "5/5 folds" is weak evidence.
 3. If real fee tiers become relevant, confirm the actual account maker fee. The study shows
    that anything above about 0 bps removes every optimistic-model edge found here.
+
+---
+
+## Factor ladder (added 2026-11-15, after the original report)
+
+**Question.** Starting from H1, does adding one factor at a time improve out-of-sample (OOS)
+results net of fees under the queue fill models? Code: `pipeline/factors.py` (rules and grids,
+fixed before any ladder result was seen) and `pipeline/ladder.py`. Tests: `pipeline/test_factors.py`.
+
+**Design (same folds, simulator, fill models and fee charge as above).**
+* Order: imb1 (H1 base) → trade-flow imbalance (`flow_1s`) → realised vol (`rv_10s`) → spread in
+  ticks → depth change (`depth_chg`, top-5 quantity vs 1 s earlier, per side) → BTC lead-lag
+  (`btc_ll`, ETH and SOL only). Each factor can only withdraw quotes. A side is quoted only if all
+  kept factors allow it.
+* Latency 50 ms, $1,000 orders, inventory cap 5 orders, the three fill models, fees -0.5 / 0 / 1 /
+  7.5 / 10 bps charged per filled dollar.
+* Thresholds are fitted **in-sample only**, per symbol, fill model and fold, on all hours before
+  the fold. Kept factors keep the thresholds chosen for that fold at the earlier step. The new
+  factor's θ (grid includes "off") maximises the training per-fill 5 s markout. It must keep at
+  least 20% of the earlier step's training notional.
+* **Keep rule**: OOS per-fill 5 s markout net of fees beats the earlier accepted step in at least
+  4 of 5 folds (generally ceil(0.8 × folds)), under **both** queue_cons and queue_prop. A fee is
+  a fixed charge per filled dollar, so a per-fill improvement holds at every fee level. A fold
+  where the in-sample fit picks "off" (no change) does not count as an improvement. Rejected
+  factors are recorded and the state stays unchanged. Per-fill markout is the criterion, not
+  total net $. When everything loses, total net $ improves just by trading less.
+
+**Ladder on the frozen window** (13:20 to 20:40, 5 hourly OOS folds 16:00 to 20:40; from
+`results/runs/2026-11-15/ladder/`). Folds improved = OOS per-fill net markout better than the
+earlier accepted step. The OOS per-fill 5 s markout of the model *after* the step is shown for
+queue_cons / queue_prop, before fees (subtract the fee in bps for net):
+
+| Step | Factor | BTC | ETH | SOL |
+|---|---|---|---|---|
+| 0 | imb1 (H1 base) | base. In-sample fit turned it **off** in every fold under both queue models (= BASE: −1.09 / −1.04 bps) | base. Off in 9 of 10 queue-model fold fits (−1.21 / −1.20) | base. θ = 0.6 in 2 folds under queue_cons, off otherwise (−1.36 / −1.26) |
+| 1 | flow_1s | **REJECT** (0/5, 0/5; in-sample fit always "off") | **REJECT** (0/5, 0/5; always "off") | **REJECT** (1/5, 0/5) |
+| 2 | rv_10s | **KEEP** (5/5, 5/5): −0.95 / −0.96 bps | **KEEP** (4/5, 5/5): −1.17 / −1.12 bps | **REJECT** (1/5, 0/5) |
+| 3 | spread | **REJECT** (3/5, 3/5; changes within ±0.007 bps) | **REJECT** (2/5, 2/5) | **REJECT** (0/5, 0/5) |
+| 4 | depth_chg | **REJECT** (0/5, 0/5; always "off") | **REJECT** (3/5, 1/5) | **REJECT** (1/5, 0/5) |
+| 5 | btc_ll | not applicable | **REJECT** (2/5, 1/5) | **REJECT** (2/5, 2/5) |
+
+Final ladder models (frozen window, OOS, queue_cons / queue_prop): BTC imb1+rv_10s −0.95 / −0.96
+bps per fill; ETH imb1+rv_10s −1.17 / −1.12; SOL imb1 alone −1.36 / −1.26. Net of a 7.5 bp fee
+they are −8.4 to −8.9 bps per fill. The OOS 5 s markout P&L at fee 0 is −$326 / −$440 (BTC),
+−$753 / −$753 (ETH) and −$439 / −$677 (SOL). Even with the −0.5 bp rebate all six numbers stay
+negative (`ladder/ladder_final.csv`). **No factor combination is profitable under the queue
+models at any fee level tested.** Under the optimistic model the final models make +0.12 (BTC),
++0.00 (ETH) and +0.27 (SOL) bps before fees. Those turn negative at a 1 bp fee and are not
+evidence of profit.
+
+What the ladder shows (inference):
+* **Only the volatility pause survives**, on BTC and ETH. It is the same effect H3 found:
+  quoting only when trailing 10 s realised vol is ≤ 1.5 to 2 bps (BTC), or ≤ 2 to 10 bps (ETH, the
+  chosen θ varies by fold). BTC gains +0.03 to +0.24 bps per fill in every fold. ETH is weaker:
+  queue_cons improves in 4 of 5 folds, one of them by only +0.002 bps, and is −0.08 bps in
+  the 16:00 fold. Treat ETH's KEEP as marginal.
+* **Under the queue models, the "H1 base" is mostly BASE.** The in-sample per-fill fit switched the
+  imbalance filter off, because it makes queue-model fills worse (as reported above). So the
+  kept BTC/ETH model is effectively "rv pause" alone under the queue models. Under optimistic
+  fills, imb1 = 0.2 is chosen in every fold.
+* Trade-flow imbalance and depth change carry information that the optimistic model rewards
+  (they improve optimistic per-fill markout in 4 to 5 of 5 folds for BTC and ETH). Under the
+  queue models the in-sample fit almost never turns them on. The pattern is the same as H1:
+  pulling the threatened side removes the benign fills, not the toxic ones.
+* Spread in ticks has almost no variation (1 tick 99.8 to 99.99% of the time), so the filter
+  rarely binds and its effects are ±0.01 bps. It is testable but uninformative on this data.
+* BTC lead-lag stays unhelpful under the queue models, as in H2.
+* No factor was untestable: every factor could be computed for every symbol where it applies.
+
+**Cumulative-window check** (run `2026-11-15-adhoc-2135`, window 13:20 to 21:35, 6 folds, need ≥ 5):
+the same decisions in every cell. BTC rv_10s 6/6, 6/6. ETH rv_10s 5/6, 6/6. BTC spread 4/6, 3/6
+(rejected). SOL btc_ll 2/6, 3/6 (rejected). Final models: BTC −0.95 / −0.96 bps, ETH −1.18 /
+−1.12, SOL −1.35 / −1.26 (queue_cons / queue_prop). This window **contains** the frozen window
+plus 55 minutes, so it is not an independent replication.
+
+Caveats specific to the ladder: forward selection is order-dependent. A factor rejected early is
+never retried after later factors change the state. One session; 5 to 6 hourly folds are
+autocorrelated. Thresholds of earlier factors are not refitted when a later factor is added.
+Latency is fixed at 50 ms in the ladder (the earlier H1 to H3 results showed latency effects
+below 0.15 bps).
+
+## Dated runs and run index
+
+Since 2026-11-15 each pipeline run writes `results/runs/<YYYY-MM-DD>/` and appends one row
+to `results/runs/index.csv`. The row records the window, row counts per table and symbol, whether
+the extract counts were consistent, the anomaly count and headline metrics. The daily entrypoint is
+`pipeline/run_daily.sh` (see `pipeline/README.md`, "Daily run"). Runs so far:
+
+| run_id | Window (UTC) | OOS folds | Trades BTC / ETH / SOL | Depth BTC / ETH / SOL | Comparable to cumulative runs? |
+|---|---|---|---|---|---|
+| `2026-11-15` | 13:20 to 20:40 | 5 | 1,691,750 / 753,949 / 252,109 | 262,711 / 259,099 / 217,670 | **No.** The frozen study window from the original report, kept for comparison. |
+| `2026-11-15-adhoc-2135` | 13:20 to 21:35 | 6 | 1,805,134 / 829,789 / 269,222 | 295,494 / 291,026 / 243,513 | Yes. A manual verification run of `run_daily.sh`. It is named `-adhoc-2135` because `2026-11-15` is taken by the frozen run. |
+
+Headline metrics in the index (latency 50 ms, OOS, per-fill 5 s markout before fees, queue_prop):
+BASE −1.04 / −1.18 / −1.26 bps vs final ladder model −0.96 / −1.12 / −1.26 bps (BTC / ETH / SOL),
+in both runs to within 0.01 bps. The first scheduled run, `2026-11-16`, will cover 13:20 on
+11-15 to 00:00 on 11-16. Every later run extends the window from the same start. Numbers from
+different runs share data and are not independent.

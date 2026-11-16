@@ -15,7 +15,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from config import CLEAN, RAW, RESULTS, SYMBOLS, TICK
+from config import CLEAN, RAW, RESULTS, SYMBOLS, TICK, WINDOW_END, WINDOW_START
 
 AUD = RESULTS / "audit"
 GAP_SEGMENT_S = 2.0  # depth silence longer than this starts a new book segment
@@ -138,7 +138,52 @@ def audit_symbol(sym: str, summary: dict) -> None:
     t.to_parquet(CLEAN / "trade" / f"{sym}.parquet", index=False)
     d.to_parquet(CLEAN / "depth" / f"{sym}.parquet", index=False)
     summary[sym] = s
-    return gl, dgl, ls, hc
+    w0, w1 = pd.Timestamp(WINDOW_START).value, pd.Timestamp(WINDOW_END).value
+    cov = dict(trade_head_silence_s=(t["ts_ns"].iloc[0] - w0) / 1e9, trade_tail_silence_s=(w1 - t["ts_ns"].iloc[-1]) / 1e9,
+               depth_head_silence_s=(d["ts_ns"].iloc[0] - w0) / 1e9, depth_tail_silence_s=(w1 - d["ts_ns"].iloc[-1]) / 1e9,
+               max_spread_ticks=int(spread_ticks.max()))
+    return gl, dgl, ls, hc, cov
+
+
+# Thresholds for the anomaly report (anything at or above is listed in anomalies.csv).
+ANOMALY_CHECKS = [
+    ("trade_dup_trade_id", 1, "duplicate trade_id rows (dropped)"),
+    ("trade_ids_missing", 1, "trade_id gaps (missing trades)"),
+    ("trade_nonpositive_price", 1, "trades with price <= 0 (dropped)"),
+    ("trade_nonpositive_qty", 1, "trades with qty <= 0 (dropped)"),
+    ("trade_off_tick", 1, "trade prices off the tick grid"),
+    ("trade_silences_gt_10s", 1, "trade silences > 10 s"),
+    ("depth_dup_exact_update_id", 1, "duplicate depth last_update_id (dropped)"),
+    ("depth_ts_nonmonotonic_as_stored", 1, "depth timestamps non-monotonic"),
+    ("depth_update_id_decreasing", 1, "depth update id decreasing"),
+    ("depth_crossed_or_locked", 1, "crossed or locked books (dropped)"),
+    ("depth_nonpositive_size_or_price_rows", 1, "depth rows with size/price <= 0 (dropped)"),
+    ("depth_levels_unsorted_rows", 1, "depth levels unsorted (dropped)"),
+    ("depth_top_vs_json_mismatch", 1, "top-of-book columns != JSON level 1 (dropped)"),
+    ("depth_missing_levels_rows", 1, "depth rows with < 10 levels (dropped)"),
+    ("depth_gaps_gt_1s", 1, "depth gaps > 1 s (gaps > 2 s split book segments)"),
+]
+COVERAGE_LIMIT_S = 10.0  # head/tail silence at the window edges above this is an anomaly (collector stopped?)
+
+
+def anomalies(summary: dict, cov: dict, depth_gaps: pd.DataFrame) -> None:
+    rows = []
+    for sym, s in summary.items():
+        for key, thr, what in ANOMALY_CHECKS:
+            if s.get(key, 0) >= thr:
+                rows.append(dict(symbol=sym, check=key, value=s[key], description=what))
+        for key, v in cov[sym].items():
+            if key.endswith("silence_s") and v > COVERAGE_LIMIT_S:
+                rows.append(dict(symbol=sym, check=key, value=round(v, 3),
+                                 description=f"no rows for more than {COVERAGE_LIMIT_S:.0f} s at the window edge"))
+        if cov[sym]["max_spread_ticks"] > 100:
+            rows.append(dict(symbol=sym, check="max_spread_ticks", value=cov[sym]["max_spread_ticks"],
+                             description="outlier spread snapshot (> 100 ticks; kept)"))
+    pd.DataFrame(rows, columns=["symbol", "check", "value", "description"]).to_csv(AUD / "anomalies.csv", index=False)
+    cv = pd.DataFrame(cov).T
+    cv.index.name = "symbol"
+    cv.to_csv(AUD / "coverage.csv")
+    print(f"anomalies: {len(rows)} listed in {AUD / 'anomalies.csv'}")
 
 
 def main() -> None:
@@ -149,6 +194,7 @@ def main() -> None:
         pd.concat([p[k] for p in parts]).to_csv(AUD / f"{name}.csv")
     # cross-symbol: depth for all symbols arrives on ONE websocket, so simultaneous gaps = connection drops
     (AUD / "audit_summary.json").write_text(json.dumps(summary, indent=2, default=str))
+    anomalies(summary, {sym: p[4] for sym, p in zip(SYMBOLS, parts)}, pd.concat([p[1] for p in parts]))
     for sym, s in summary.items():
         print(sym, {k: s[k] for k in ("trade_ids_missing", "trade_missing_share", "depth_rows_dropped", "depth_gaps_gt_2s", "depth_max_gap_s", "book_lag_ms", "at_touch_share_at_best_lag")})
 

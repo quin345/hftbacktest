@@ -1,0 +1,108 @@
+{
+  "ladder": [
+    "imb1",
+    "flow_1s",
+    "rv_10s",
+    "spread",
+    "depth_chg",
+    "btc_ll"
+  ],
+  "grids": {
+    "imb1": [
+      "inf",
+      "0.9",
+      "0.8",
+      "0.6",
+      "0.4",
+      "0.2"
+    ],
+    "flow_1s": [
+      "inf",
+      "0.9",
+      "0.75",
+      "0.5",
+      "0.25"
+    ],
+    "rv_10s": [
+      "inf",
+      "10.0",
+      "7.0",
+      "5.0",
+      "4.0",
+      "3.0",
+      "2.0",
+      "1.5"
+    ],
+    "spread": [
+      "inf",
+      "5.0",
+      "3.0",
+      "2.0",
+      "1.0"
+    ],
+    "depth_chg": [
+      "inf",
+      "0.5",
+      "0.3",
+      "0.2",
+      "0.1"
+    ],
+    "btc_ll": [
+      "inf",
+      "3.0",
+      "2.0",
+      "1.0",
+      "0.5",
+      "0.25"
+    ]
+  },
+  "latency_ms": 50,
+  "models": [
+    "optimistic",
+    "queue_cons",
+    "queue_prop"
+  ],
+  "queue_models_for_decision": [
+    "queue_cons",
+    "queue_prop"
+  ],
+  "fees_bps": [
+    -0.5,
+    0.0,
+    1.0,
+    7.5,
+    10.0
+  ],
+  "order_notional_usd": 1000.0,
+  "max_inv_orders": 5,
+  "min_activity": 0.2,
+  "window": [
+    "2026-11-15T13:20:00.000000Z",
+    "2026-11-15T20:40:00.000000Z"
+  ],
+  "folds": [
+    [
+      "2026-11-15 16:00:00+00:00",
+      "2026-11-15 17:00:00+00:00"
+    ],
+    [
+      "2026-11-15 17:00:00+00:00",
+      "2026-11-15 18:00:00+00:00"
+    ],
+    [
+      "2026-11-15 18:00:00+00:00",
+      "2026-11-15 19:00:00+00:00"
+    ],
+    [
+      "2026-11-15 19:00:00+00:00",
+      "2026-11-15 20:00:00+00:00"
+    ],
+    [
+      "2026-11-15 20:00:00+00:00",
+      "2026-11-15 20:40:00+00:00"
+    ]
+  ],
+  "need_folds": 4,
+  "selection": "per fold, in-sample on all hours before the fold: argmax training 5 s markout per fill (bps) over the new factor's grid, earlier factors fixed at their fold-specific thresholds, training notional >= 0.2 x previous step's",
+  "decision": "KEEP iff OOS per-fill 5 s markout net of fee beats the previous accepted step in >= need_folds folds under both queue_cons and queue_prop"
+}

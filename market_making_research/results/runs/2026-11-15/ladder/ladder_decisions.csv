@@ -1,0 +1,19 @@
+symbol,step,factor,decision,reason,folds_improved_queue_cons,folds_improved_queue_prop,folds_improved_optimistic,n_folds,need,kept_set
+BTCUSDT,0,imb1,base (kept by design),H1 is the ladder base; fold counts are vs BASE (always quote),0.0,0.0,5.0,5.0,4.0,imb1
+BTCUSDT,1,flow_1s,REJECT,"queue_cons 0/5, queue_prop 0/5 folds improved; need >= 4 under both",0.0,0.0,5.0,5.0,4.0,imb1
+BTCUSDT,2,rv_10s,KEEP,"queue_cons 5/5, queue_prop 5/5 folds improved; need >= 4 under both",5.0,5.0,2.0,5.0,4.0,"imb1,rv_10s"
+BTCUSDT,3,spread,REJECT,"queue_cons 3/5, queue_prop 3/5 folds improved; need >= 4 under both",3.0,3.0,0.0,5.0,4.0,"imb1,rv_10s"
+BTCUSDT,4,depth_chg,REJECT,"queue_cons 0/5, queue_prop 0/5 folds improved; need >= 4 under both",0.0,0.0,5.0,5.0,4.0,"imb1,rv_10s"
+BTCUSDT,5,btc_ll,not applicable,BTC lead-lag is defined for ETHUSDT/SOLUSDT only,,,,,,"imb1,rv_10s"
+ETHUSDT,0,imb1,base (kept by design),H1 is the ladder base; fold counts are vs BASE (always quote),0.0,0.0,5.0,5.0,4.0,imb1
+ETHUSDT,1,flow_1s,REJECT,"queue_cons 0/5, queue_prop 0/5 folds improved; need >= 4 under both",0.0,0.0,4.0,5.0,4.0,imb1
+ETHUSDT,2,rv_10s,KEEP,"queue_cons 4/5, queue_prop 5/5 folds improved; need >= 4 under both",4.0,5.0,5.0,5.0,4.0,"imb1,rv_10s"
+ETHUSDT,3,spread,REJECT,"queue_cons 2/5, queue_prop 2/5 folds improved; need >= 4 under both",2.0,2.0,0.0,5.0,4.0,"imb1,rv_10s"
+ETHUSDT,4,depth_chg,REJECT,"queue_cons 3/5, queue_prop 1/5 folds improved; need >= 4 under both",3.0,1.0,4.0,5.0,4.0,"imb1,rv_10s"
+ETHUSDT,5,btc_ll,REJECT,"queue_cons 2/5, queue_prop 1/5 folds improved; need >= 4 under both",2.0,1.0,1.0,5.0,4.0,"imb1,rv_10s"
+SOLUSDT,0,imb1,base (kept by design),H1 is the ladder base; fold counts are vs BASE (always quote),1.0,0.0,5.0,5.0,4.0,imb1
+SOLUSDT,1,flow_1s,REJECT,"queue_cons 1/5, queue_prop 0/5 folds improved; need >= 4 under both",1.0,0.0,2.0,5.0,4.0,imb1
+SOLUSDT,2,rv_10s,REJECT,"queue_cons 1/5, queue_prop 0/5 folds improved; need >= 4 under both",1.0,0.0,5.0,5.0,4.0,imb1
+SOLUSDT,3,spread,REJECT,"queue_cons 0/5, queue_prop 0/5 folds improved; need >= 4 under both",0.0,0.0,2.0,5.0,4.0,imb1
+SOLUSDT,4,depth_chg,REJECT,"queue_cons 1/5, queue_prop 0/5 folds improved; need >= 4 under both",1.0,0.0,4.0,5.0,4.0,imb1
+SOLUSDT,5,btc_ll,REJECT,"queue_cons 2/5, queue_prop 2/5 folds improved; need >= 4 under both",2.0,2.0,4.0,5.0,4.0,imb1

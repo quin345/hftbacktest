@@ -1,0 +1,147 @@
+run_id=2026-11-15-adhoc-2135 invoked_at=2026-11-15T21:35:06Z window=[2026-11-15T13:20:00.000000Z, 2026-11-15T21:35:00.000000Z) stage=/root/.openclaw/workspace/coordinator/projects/hftbacktest/market_making_research/results/runs/.incomplete-2026-11-15-adhoc-2135-49258 data=/root/.openclaw/workspace/coordinator/projects/hftbacktest/market_making_research/data/runs/2026-11-15-adhoc-2135-49258
+== test_sim.py 21:36:00
+ok test_queue_back_of_line
+ok test_optimistic_fills_on_touch
+ok test_latency_blocks_early_trade
+ok test_trade_through_fills
+ok test_book_cross_fills
+ok test_level_shrink_caps_queue_and_prop_cancels
+ok test_post_only_reject
+== test_factors.py 21:36:01
+ok test_grids_start_with_off_and_ladder_order
+ok test_off_allows_everything
+ok test_directional_filters_pull_the_threatened_side
+ok test_regime_filters_pull_both_sides
+ok test_depth_change_filter_is_per_side
+ok test_nan_is_neutral
+ok test_combined_is_logical_and
+ok test_depth_change_values_and_segments
+ok test_trade_flow_window_is_left_open
+ok test_btc_leadlag_not_applicable_to_btc_and_fold_rule
+== extract.py 21:36:02
+BTCUSDT: trades=1805134 depth=295494
+ETHUSDT: trades=829789 depth=291026
+SOLUSDT: trades=269222 depth=243513
+extract counts consistent before/after: {'spot_trade/BTCUSDT': 1805134, 'spot_trade/ETHUSDT': 829789, 'spot_trade/SOLUSDT': 269222, 'spot_depth10/BTCUSDT': 295494, 'spot_depth10/ETHUSDT': 291026, 'spot_depth10/SOLUSDT': 243513}
+== audit_clean.py 21:37:14
+anomalies: 9 listed in /root/.openclaw/workspace/coordinator/projects/hftbacktest/market_making_research/results/runs/.incomplete-2026-11-15-adhoc-2135-49258/audit/anomalies.csv
+BTCUSDT {'trade_ids_missing': 1053, 'trade_missing_share': 0.0005829961128055954, 'depth_rows_dropped': 0, 'depth_gaps_gt_2s': 1, 'depth_max_gap_s': 6.000275, 'book_lag_ms': 10, 'at_touch_share_at_best_lag': 0.412340025726622}
+ETHUSDT {'trade_ids_missing': 121, 'trade_missing_share': 0.00014579894205395764, 'depth_rows_dropped': 0, 'depth_gaps_gt_2s': 1, 'depth_max_gap_s': 6.000268, 'book_lag_ms': 10, 'at_touch_share_at_best_lag': 0.3621474856861202}
+SOLUSDT {'trade_ids_missing': 178, 'trade_missing_share': 0.0006607275426874536, 'depth_rows_dropped': 0, 'depth_gaps_gt_2s': 1, 'depth_max_gap_s': 6.000567, 'book_lag_ms': 10, 'at_touch_share_at_best_lag': 0.7940695782662636}
+== features.py 21:38:12
+BTCUSDT 295494 1805134
+ETHUSDT 291026 829789
+SOLUSDT 243513 269222
+== hypotheses.py 21:38:19
+BTCUSDT H1_imbalance inf 0.11s/run
+BTCUSDT H1_imbalance 0.9 0.08s/run
+BTCUSDT H1_imbalance 0.8 0.07s/run
+BTCUSDT H1_imbalance 0.6 0.06s/run
+BTCUSDT H1_imbalance 0.4 0.06s/run
+BTCUSDT H1_imbalance 0.2 0.06s/run
+BTCUSDT H3_vol_regime inf 0.11s/run
+BTCUSDT H3_vol_regime 10.0 0.10s/run
+BTCUSDT H3_vol_regime 7.0 0.10s/run
+BTCUSDT H3_vol_regime 5.0 0.10s/run
+BTCUSDT H3_vol_regime 4.0 0.10s/run
+BTCUSDT H3_vol_regime 3.0 0.09s/run
+BTCUSDT H3_vol_regime 2.0 0.08s/run
+BTCUSDT H3_vol_regime 1.5 0.06s/run
+ETHUSDT H1_imbalance inf 0.09s/run
+ETHUSDT H1_imbalance 0.9 0.09s/run
+ETHUSDT H1_imbalance 0.8 0.08s/run
+ETHUSDT H1_imbalance 0.6 0.07s/run
+ETHUSDT H1_imbalance 0.4 0.06s/run
+ETHUSDT H1_imbalance 0.2 0.06s/run
+ETHUSDT H2_btc_leadlag inf 0.09s/run
+ETHUSDT H2_btc_leadlag 3.0 0.09s/run
+ETHUSDT H2_btc_leadlag 2.0 0.09s/run
+ETHUSDT H2_btc_leadlag 1.0 0.09s/run
+ETHUSDT H2_btc_leadlag 0.5 0.09s/run
+ETHUSDT H2_btc_leadlag 0.25 0.08s/run
+ETHUSDT H3_vol_regime inf 0.09s/run
+ETHUSDT H3_vol_regime 10.0 0.09s/run
+ETHUSDT H3_vol_regime 7.0 0.08s/run
+ETHUSDT H3_vol_regime 5.0 0.08s/run
+ETHUSDT H3_vol_regime 4.0 0.09s/run
+ETHUSDT H3_vol_regime 3.0 0.07s/run
+ETHUSDT H3_vol_regime 2.0 0.06s/run
+ETHUSDT H3_vol_regime 1.5 0.05s/run
+SOLUSDT H1_imbalance inf 0.07s/run
+SOLUSDT H1_imbalance 0.9 0.06s/run
+SOLUSDT H1_imbalance 0.8 0.06s/run
+SOLUSDT H1_imbalance 0.6 0.05s/run
+SOLUSDT H1_imbalance 0.4 0.05s/run
+SOLUSDT H1_imbalance 0.2 0.04s/run
+SOLUSDT H2_btc_leadlag inf 0.07s/run
+SOLUSDT H2_btc_leadlag 3.0 0.07s/run
+SOLUSDT H2_btc_leadlag 2.0 0.07s/run
+SOLUSDT H2_btc_leadlag 1.0 0.06s/run
+SOLUSDT H2_btc_leadlag 0.5 0.06s/run
+SOLUSDT H2_btc_leadlag 0.25 0.07s/run
+SOLUSDT H3_vol_regime inf 0.08s/run
+SOLUSDT H3_vol_regime 10.0 0.06s/run
+SOLUSDT H3_vol_regime 7.0 0.08s/run
+SOLUSDT H3_vol_regime 5.0 0.06s/run
+SOLUSDT H3_vol_regime 4.0 0.05s/run
+SOLUSDT H3_vol_regime 3.0 0.04s/run
+SOLUSDT H3_vol_regime 2.0 0.03s/run
+SOLUSDT H3_vol_regime 1.5 0.02s/run
+done
+== ladder.py 21:39:33
+SOLUSDT ladder done; 137 simulations; kept: ['imb1']
+BTCUSDT ladder done; 120 simulations; kept: ['imb1', 'rv_10s']
+ETHUSDT ladder done; 185 simulations; kept: ['imb1', 'rv_10s']
+ symbol  step    factor              decision                                                              reason
+BTCUSDT     0      imb1 base (kept by design)       H1 is the ladder base; fold counts are vs BASE (always quote)
+BTCUSDT     1   flow_1s                REJECT queue_cons 0/6, queue_prop 0/6 folds improved; need >= 5 under both
+BTCUSDT     2    rv_10s                  KEEP queue_cons 6/6, queue_prop 6/6 folds improved; need >= 5 under both
+BTCUSDT     3    spread                REJECT queue_cons 4/6, queue_prop 3/6 folds improved; need >= 5 under both
+BTCUSDT     4 depth_chg                REJECT queue_cons 0/6, queue_prop 0/6 folds improved; need >= 5 under both
+BTCUSDT     5    btc_ll        not applicable                    BTC lead-lag is defined for ETHUSDT/SOLUSDT only
+ETHUSDT     0      imb1 base (kept by design)       H1 is the ladder base; fold counts are vs BASE (always quote)
+ETHUSDT     1   flow_1s                REJECT queue_cons 0/6, queue_prop 0/6 folds improved; need >= 5 under both
+ETHUSDT     2    rv_10s                  KEEP queue_cons 5/6, queue_prop 6/6 folds improved; need >= 5 under both
+ETHUSDT     3    spread                REJECT queue_cons 2/6, queue_prop 2/6 folds improved; need >= 5 under both
+ETHUSDT     4 depth_chg                REJECT queue_cons 2/6, queue_prop 1/6 folds improved; need >= 5 under both
+ETHUSDT     5    btc_ll                REJECT queue_cons 2/6, queue_prop 1/6 folds improved; need >= 5 under both
+SOLUSDT     0      imb1 base (kept by design)       H1 is the ladder base; fold counts are vs BASE (always quote)
+SOLUSDT     1   flow_1s                REJECT queue_cons 1/6, queue_prop 0/6 folds improved; need >= 5 under both
+SOLUSDT     2    rv_10s                REJECT queue_cons 2/6, queue_prop 0/6 folds improved; need >= 5 under both
+SOLUSDT     3    spread                REJECT queue_cons 0/6, queue_prop 0/6 folds improved; need >= 5 under both
+SOLUSDT     4 depth_chg                REJECT queue_cons 1/6, queue_prop 0/6 folds improved; need >= 5 under both
+SOLUSDT     5    btc_ll                REJECT queue_cons 2/6, queue_prop 3/6 folds improved; need >= 5 under both
+== robustness.py 21:39:51
+clock_shift_ms                      -40      0                       40
+order_notional                  1000.0  100.0   1000.0  10000.0 1000.0 
+symbol  strategy     model                                             
+BTCUSDT BASE         optimistic  -0.276  -0.290  -0.290  -0.290  -0.336
+                     queue_cons  -1.069  -1.069  -1.087  -1.118  -1.105
+                     queue_prop  -1.018  -1.011  -1.035  -1.096  -1.064
+        H1_theta_0.2 optimistic   0.145   0.123   0.123   0.123   0.080
+                     queue_cons  -1.357  -1.330  -1.329  -1.330  -1.354
+                     queue_prop  -1.293  -1.300  -1.289  -1.313  -1.342
+        H1_theta_0.6 optimistic   0.077   0.056   0.056   0.056   0.013
+                     queue_cons  -1.294  -1.212  -1.226  -1.255  -1.317
+                     queue_prop  -1.209  -1.156  -1.177  -1.208  -1.255
+ETHUSDT BASE         optimistic  -0.551  -0.574  -0.574  -0.574  -0.643
+                     queue_cons  -1.207  -1.197  -1.214  -1.243  -1.235
+                     queue_prop  -1.173  -1.148  -1.184  -1.233  -1.208
+        H1_theta_0.2 optimistic   0.023  -0.048  -0.048  -0.048  -0.133
+                     queue_cons  -1.425  -1.403  -1.402  -1.408  -1.428
+                     queue_prop  -1.404  -1.386  -1.375  -1.419  -1.392
+        H1_theta_0.6 optimistic  -0.146  -0.197  -0.197  -0.197  -0.285
+                     queue_cons  -1.404  -1.314  -1.312  -1.316  -1.346
+                     queue_prop  -1.322  -1.266  -1.273  -1.295  -1.288
+SOLUSDT BASE         optimistic  -0.057  -0.081  -0.081  -0.081  -0.188
+                     queue_cons  -1.303  -1.305  -1.312  -1.345  -1.334
+                     queue_prop  -1.255  -1.227  -1.261  -1.329  -1.288
+        H1_theta_0.2 optimistic   0.325   0.274   0.274   0.274   0.175
+                     queue_cons  -1.541  -1.576  -1.589  -1.578  -1.625
+                     queue_prop  -1.531  -1.556  -1.578  -1.581  -1.621
+        H1_theta_0.6 optimistic   0.273   0.228   0.228   0.228   0.130
+                     queue_cons  -1.419  -1.473  -1.482  -1.474  -1.497
+                     queue_prop  -1.403  -1.441  -1.467  -1.476  -1.488
+== summaries.py 21:40:01
+tables written: 29 files hashed
+index row appended: 2026-11-15-adhoc-2135 -> /root/.openclaw/workspace/coordinator/projects/hftbacktest/market_making_research/results/runs/index.csv

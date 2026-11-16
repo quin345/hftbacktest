@@ -1,0 +1,4 @@
+symbol,trade_head_silence_s,trade_tail_silence_s,depth_head_silence_s,depth_tail_silence_s,max_spread_ticks
+BTCUSDT,0.298,3.174,0.023979,0.081001,3691.0
+ETHUSDT,0.082,3.954,0.024547,0.080571,99.0
+SOLUSDT,1.941,2.896,0.004484,0.298142,3.0

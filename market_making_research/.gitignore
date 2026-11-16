@@ -3,3 +3,6 @@ verify_run/
 .venv/
 __pycache__/
 *.pyc
+verify_daily/
+results/runs/.lock
+results/runs/.incomplete-*/

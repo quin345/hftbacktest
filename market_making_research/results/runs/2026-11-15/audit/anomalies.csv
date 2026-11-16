@@ -1,0 +1,10 @@
+symbol,check,value,description
+BTCUSDT,trade_ids_missing,1053,trade_id gaps (missing trades)
+BTCUSDT,depth_gaps_gt_1s,2,depth gaps > 1 s (gaps > 2 s split book segments)
+BTCUSDT,max_spread_ticks,3691,outlier spread snapshot (> 100 ticks; kept)
+ETHUSDT,trade_ids_missing,121,trade_id gaps (missing trades)
+ETHUSDT,trade_silences_gt_10s,1,trade silences > 10 s
+ETHUSDT,depth_gaps_gt_1s,2,depth gaps > 1 s (gaps > 2 s split book segments)
+SOLUSDT,trade_ids_missing,178,trade_id gaps (missing trades)
+SOLUSDT,trade_silences_gt_10s,6,trade silences > 10 s
+SOLUSDT,depth_gaps_gt_1s,2,depth gaps > 1 s (gaps > 2 s split book segments)

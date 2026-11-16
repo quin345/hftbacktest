@@ -1,0 +1,7 @@
+{
+  "run_id": "2026-11-15",
+  "invoked_at_utc": "2026-11-15 (original frozen study, run_all.sh)",
+  "window": ["2026-11-15T13:20:00.000000Z", "2026-11-15T20:40:00.000000Z"],
+  "comparable_to_cumulative": "NO: frozen 13:20-20:40 study window, not a cumulative run",
+  "notes": "Frozen study result copied unchanged from results/. Added 2026-11-15 ~21:35 UTC: ladder/, audit/anomalies.csv, coverage.csv, extract_counts.csv, extract_manifest.csv, from a rerun of the new pipeline on the same frozen window (verify_daily/frozen/frozen-rerun) whose 20 original result files were byte-identical to these (hashes in ADDENDUM_hashes.txt)."
+}

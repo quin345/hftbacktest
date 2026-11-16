@@ -71,6 +71,8 @@ def main() -> None:
 
     lines = []
     for p in sorted(RESULTS.rglob("*.csv")) + sorted(RESULTS.rglob("*.json")):
+        if p.relative_to(RESULTS).parts[0] == "runs" or p.name == "run_meta.json":
+            continue  # never hash the dated-run archive or the (time-stamped) run metadata
         lines.append(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(RESULTS)}")
     (TAB / "hash_manifest.txt").write_text("\n".join(lines) + "\n")
     print("tables written:", len(lines), "files hashed")
