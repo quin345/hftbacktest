@@ -1,0 +1,6 @@
+# Vendored QuestDB distribution (checksum-verified download, ~250 MB extracted)
+vendor/
+# Captured raw archives, ILP spool files and QuestDB data root
+data/
+__pycache__/
+.pytest_cache/
