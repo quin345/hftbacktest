@@ -1,0 +1,30 @@
+== per-file raw conversion (untrimmed) and clears ==
+Correcting the latency
+local_timestamp is ahead of exch_timestamp by 1272156851
+Correcting the event order
+btcusdt_20240808.gz: converted=491973 clear_rows=4
+  idx=263 side=BUY exch_ts=2024-08-08 23:54:16.493 local_ts=2024-08-08 23:54:16.591 px=61653.4
+  idx=1264 side=SELL exch_ts=2024-08-08 23:54:16.493 local_ts=2024-08-08 23:54:16.591 px=61976.2
+  idx=2335 side=BUY exch_ts=2024-08-08 23:54:16.493 local_ts=2024-08-08 23:54:16.591 px=61653.4
+  idx=3336 side=SELL exch_ts=2024-08-08 23:54:16.493 local_ts=2024-08-08 23:54:16.591 px=61976.2
+  snapshot rows following each clear: [1000, 1000, 1000, 1000]
+Correcting the latency
+local_timestamp is ahead of exch_timestamp by 1273873720
+Correcting the event order
+btcusdt_20240809.gz: converted=666731 clear_rows=4
+  idx=200417 side=BUY exch_ts=2024-08-09 00:01:28.356 local_ts=2024-08-09 00:01:28.445 px=61432.4
+  idx=201418 side=SELL exch_ts=2024-08-09 00:01:28.356 local_ts=2024-08-09 00:01:28.445 px=61803.8
+  idx=202775 side=BUY exch_ts=2024-08-09 00:01:28.356 local_ts=2024-08-09 00:01:28.445 px=61432.4
+  idx=203776 side=SELL exch_ts=2024-08-09 00:01:28.356 local_ts=2024-08-09 00:01:28.445 px=61803.8
+  snapshot rows following each clear: [1000, 1000, 1000, 1000]
+
+== trimmed files (what prepare saves) ==
+8/08: rows=491710 first=2024-08-08 23:54:16.591 last=2024-08-09 00:00:01.105 span_s=344.51
+8/09: rows=466314 first=2024-08-09 00:01:28.445 last=2024-08-09 00:05:03.729 span_s=215.28
+gap between trimmed 8/08 last local_ts and trimmed 8/09 first local_ts: 87.34 s
+
+== A: validation of concatenation ==
+plain concatenate(trimmed): validate_event_order OK
+concatenate(trimmed) + correct_event_order: validate_event_order FAILED: ValueError: exchange events are out of order.
+plain concatenate(untrimmed raw convert outputs): OK
+local_ts overlap in untrimmed converts: 8/08 last 2024-08-09 00:00:01.105 | 8/09 first 2024-08-09 00:00:01.552

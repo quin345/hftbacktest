@@ -9,3 +9,11 @@ docs/_build
 **/target
 **/tmp_*
 **/*.so
+# Local research baseline (generated / environment; not upstream)
+.venv/
+research_baseline/data/
+research_baseline/output/
+.env
+.env.*
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,92 @@
+# Research baseline configuration (USD-M BTCUSDT, bundled sample data only).
+#
+# Status labels:
+#   "sample-data"   : taken from the bundled raw file in examples/usdm/.
+#   "repo-example"  : copied from an existing example notebook/script in this fork.
+#   "demo-assumed"  : illustrative value chosen for the baseline. NOT a verified
+#                     Binance fact and NOT a current exchange parameter.
+# Nothing in this file is a claim about current Binance fees, tick/lot sizes,
+# or latency. Verify against exchangeInfo / account tier / measured latency
+# before using any result for decisions.
+
+[source]
+upstream_repo = "https://github.com/quin345/hftbacktest.git"
+upstream_commit = "5f3ec40b2afb764e0fea112f941ed85523ef4e88"
+status = "repo-example"
+
+[data]
+# Paths relative to the project root (projects/hftbacktest). Each file is run as its
+# own session. Raw spans (local_ts): 2024-08-08 23:54:16 to 2024-08-09 00:00:01 UTC
+# (5.8 min); 2024-08-09 00:00:00 to 00:05:02 UTC (5.0 min). After trimming before the
+# first snapshot: 8/08 = 344.5 s, 8/09 = 215.3 s (3.6 min). Trimmed sessions are
+# separated by an ~87 s gap and are not concatenated in the baseline.
+raw_files = ["examples/usdm/btcusdt_20240808.gz", "examples/usdm/btcusdt_20240809.gz"]
+symbol = "BTCUSDT"
+# Convert-time latency correction passed to binancefutures.convert(base_latency=...).
+base_latency_ns = 0
+# Drop events before the first DEPTH_CLEAR row, which is the file's opening REST
+# snapshot. Its raw line number differs per file: 8/08 is line 55, 8/09 is line 44,234.
+# Later DEPTH_CLEAR rows are kept (see count_depth_clears in grid_baseline.py).
+trim_before_first_snapshot = true
+status = "sample-data"
+
+[instrument]
+# Linear USD-M contract, contract_size 1.0 (repo-example notebooks use linear_asset(1.0)).
+contract_size = 1.0
+# Tick and lot size are demo-assumed; the sample file carries no exchangeInfo.
+tick_size = 0.10
+lot_size = 0.001
+status = "demo-assumed"
+
+[fees]
+# Trading value fee model: positive = fee paid, negative = rebate.
+# 0.02% maker / 0.05% taker is an illustrative base-tier assumption, NOT verified.
+# The repo's notebooks use a -0.005% maker rebate for LP-program backtests.
+maker_fee = 0.0002
+taker_fee = 0.0005
+status = "demo-assumed"
+
+[latency]
+# Constant order latency (ns) for entry and response. The repo's interpolated
+# latency samples are not bundled, so a constant model is used.
+entry_ns = 20_000_000
+resp_ns = 20_000_000
+status = "demo-assumed"
+
+[queue]
+# Power probability queue model 3 with exponent n, as used in the repo's grid notebook.
+model = "power_prob_queue_model3"
+n = 3.0
+status = "repo-example"
+
+[strategy]
+# Adapted from "High-Frequency Grid Trading - Simplified from GLFT.ipynb" (cell 1, gridtrading).
+# Sampling interval and volatility window come from that notebook.
+sample_interval_ns = 100_000_000       # hbt.elapse(100ms)
+# demo-assumed deviation: the notebook uses 6000 samples (10 minutes). The bundled
+# sample spans only ~10.8 minutes in total, so a 10-minute warm-up would leave no
+# trading time. 600 samples (1 minute) is used instead. Volatility refresh is unchanged.
+vol_window_samples = 600
+vol_update_every_samples = 50          # volatility refreshed every 5s
+vol_annualization = 10.0               # notebook scales nanstd by sqrt(10)
+vol_to_half_spread = 5.0               # notebook calls gridtrading with [5]
+grid_num = 20
+skew = 1.0
+max_notional_position = 1000.0         # quote currency
+notional_qty = 100.0                   # order notional, quote currency
+status = "repo-example"
+
+[run]
+# Two deterministic baseline runs on the same converted data must match exactly.
+repeat_runs = 2
+status = "repo-example"
+
+[not_modeled]
+# Explicitly out of scope for this milestone; reported in the README and report.
+funding = "omitted: markPriceUpdate and funding events are not converted (opt=''); the samples were not checked for a settlement crossing, so net economics are incomplete"
+market_impact = "not modeled (repo docs: order_fill.rst)"
+inventory_limit = "soft: quoting stops at +/-1000 notional; resting orders may fill past it during cancel latency"
+depth_clears = "4 DEPTH_CLEAR rows per file (two identical snapshot blocks from one REST line); fill effects not measured"
+backend = "HashMapMarketDepthBacktest, no initial_snapshot (notebook uses ROIVector + external snapshot)"
+latency_samples = "constant latency only; intp_order_latency samples not bundled"
+live_trading = "out of scope; no exchange connection, keys, or orders"
